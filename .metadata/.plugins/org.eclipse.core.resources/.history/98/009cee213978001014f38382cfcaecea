@@ -1,0 +1,44 @@
+package orderapp.controller;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+import orderapp.dto.ResponseStructure;
+import orderapp.entity.User;
+import orderapp.service.UserService;
+
+@RestController
+@RequestMapping("/api/user")
+public class UserController {
+	
+	@Autowired
+	private UserService userService;
+	
+	@PostMapping
+	public ResponseEntity<ResponseStructure<User>> addUser(@RequestBody User user){
+		User reposnse = userService.addUser(user);
+		ResponseStructure<User> apiResponse = new ResponseStructure<User>();
+		apiResponse.setData(reposnse);
+		apiResponse.setMessage("user added successfull " );
+		apiResponse.setStatusCode(HttpStatus.OK.value());
+		return new ResponseEntity<ResponseStructure<User>>(apiResponse,HttpStatus.OK);
+	}
+	
+	@GetMapping("/{id}")
+	public ResponseEntity<ResponseStructure<User>> getUser(@PathVariable Integer id){
+		User reposnse = userService.getUser(id);
+		ResponseStructure<User> apiResponse = new ResponseStructure<User>();
+		apiResponse.setData(reposnse);
+		apiResponse.setMessage("User Found" );
+		apiResponse.setStatusCode(HttpStatus.OK.value());
+		return new ResponseEntity<ResponseStructure<User>>(apiResponse,HttpStatus.OK);
+	}
+	
+}

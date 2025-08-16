@@ -1,0 +1,5 @@
+package orderapp.exception;
+
+public class UserNotFoundException {
+
+}

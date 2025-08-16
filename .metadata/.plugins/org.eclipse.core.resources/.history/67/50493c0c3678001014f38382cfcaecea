@@ -1,0 +1,9 @@
+package orderapp.service;
+
+import orderapp.entity.User;
+
+public interface UserService {
+
+	User addUser(User user);
+
+}

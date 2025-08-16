@@ -1,0 +1,127 @@
+package orderapp.service.implementation;
+
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
+import java.util.NoSuchElementException;
+import java.util.Optional;
+
+import org.springframework.stereotype.Service;
+
+import lombok.RequiredArgsConstructor;
+import orderapp.dto.BillResponse;
+import orderapp.dto.OrderItemRequest;
+import orderapp.dto.OrderRequest;
+import orderapp.dto.PaymentDto;
+import orderapp.entity.Food;
+import orderapp.entity.Order;
+import orderapp.entity.OrderItem;
+import orderapp.entity.Restaurant;
+import orderapp.enums.OrderStatus;
+import orderapp.exception.PaymentFailedException;
+import orderapp.repository.OrderRepository;
+import orderapp.service.FoodService;
+import orderapp.service.OrderService;
+import orderapp.service.RestaurantService;
+@Service
+@RequiredArgsConstructor
+public class OrderServiceImplementation implements OrderService {
+
+	private final RestaurantService restaurantService;
+	private final FoodService foodService;
+	private final OrderRepository orderRepository;
+
+	@Override
+	public BillResponse generateBill(OrderRequest orderRequest) {
+		Restaurant restaurant = restaurantService.getById(orderRequest.getRestaurantId());
+		StringBuilder summary = new StringBuilder();
+		float totalPrice = 0;
+		
+		for(OrderItemRequest orderItem:orderRequest.getOrderItems()) {
+			Food food = foodService.getFootById(orderItem.getFoodId());
+			float price = food.getPrice() * orderItem.getQuantity();
+			totalPrice += price;
+			summary.append(food.getName()).append(" X ").append(orderItem.getQuantity()).append(" = ")
+			.append(price).append("/n");
+		}
+		return new BillResponse(restaurant.getName(),summary.toString() , totalPrice );
+	}
+
+	@Override
+	public String payAndPlaceOrder(PaymentDto payment) {
+		if(payment.isPaymentSuccessfull()) {
+			Order order = new Order();
+			order.setStatus(OrderStatus.PLACED);
+			
+			Restaurant restaurant = restaurantService.getById(payment.getRestaurantId());
+			order.setRestaurant(restaurant);
+			
+			List<OrderItem> items = new ArrayList<OrderItem>();
+			double totalPrice = 0;
+			
+			for(OrderItemRequest request : payment.getOrderItems()) {
+				Food food = foodService.getFootById(request.getFoodId());
+				
+				OrderItem orderItem = new OrderItem();
+				orderItem.setFood(food);
+				orderItem.setQuantity(request.getQuantity());
+				orderItem.setOrder(order);
+				items.add(orderItem);
+				
+				double price = food.getPrice() * request.getQuantity();
+				totalPrice += price;
+			}
+			order.setTotalPrice(totalPrice);
+			order.setOrderItem(items);
+			
+			orderRepository.save(order);
+			return "order has been placed";
+		}else {
+			throw new PaymentFailedException("payment was not successful , hence order connot be placed");
+		}
+	}
+
+	@Override
+	public List<Order> fetchAllOrderByRestaurantId(Integer id) {
+		Restaurant restaurant = restaurantService.getById(id);
+		if(restaurant == null) throw new RuntimeException("Restaurent not found for the  id : "+ id);
+		
+		List<Order> orders = restaurant.getOrders();
+		if(orders == null) {
+			throw new RuntimeException("Order not found for this restaurent id : "+id);
+			
+		}
+		return orders;
+	}
+
+	@Override
+	public void updateOrderStatus(Integer id, OrderStatus status) {
+		Order order = orderRepository.findById(id).orElseThrow(()-> new RuntimeException("Order Not found"));
+		order.setStatus(status);
+		orderRepository.save(order);
+	}
+
+	@Override
+	public void deleteOrderById(Integer id) {
+		orderRepository.deleteById(id);
+	}
+
+	@Override
+	public Order getOrder(Integer id) {
+		Optional<Order> option = orderRepository.findById(id);
+		if(option.isPresent()) {
+			return option.get();
+		}
+		throw new NoSuchElementException("Order with Id: "+id+" does not exits");
+	}
+
+	@Override
+	public String calcelOrder(Integer id) {
+		Order order = orderRepository.findById(id).orElseThrow(()-> new RuntimeException("Order Not found"));
+		OrderStatus status = OrderStatus.CALCELLED;
+		order.setStatus(status);
+		orderRepository.save(order);
+		return "Amount will be reverted soon";
+	}
+	
+}

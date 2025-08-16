@@ -1,0 +1,19 @@
+package orderapp.service;
+
+import java.util.List;
+
+import orderapp.dto.BillResponse;
+import orderapp.dto.OrderRequest;
+import orderapp.dto.PaymentDto;
+import orderapp.entity.Order;
+import orderapp.enums.OrderStatus;
+
+public interface OrderService {
+	BillResponse generateBill(OrderRequest orderRequest);
+	String payAndPlaceOrder(PaymentDto payment);
+	List<Order> fetchAllOrderByRestaurantId(Integer id);
+	void updateOrderStatus(Integer id, OrderStatus status);
+	void deleteOrderById(Integer id);
+	Order getOrder(Integer id);
+	String calcelOrder(Integer id);
+}
